@@ -1,5 +1,6 @@
 # EEESEABOAT 2025
 
+# Frontend:
 A React-based interface for Arduino EEESEABOAT control system.
 
 ## Prerequisites
@@ -32,66 +33,16 @@ A React-based interface for Arduino EEESEABOAT control system.
 
    The application will be available at `http://localhost:5173` (or another port if 5173 is in use).
 
-## Available Scripts
+#Backend: 
 
-In the `frontend` directory, you can run:
+## How to run:
 
-- **`npm run dev`** - Starts the development server
-- **`npm run build`** - Builds the app for production
-- **`npm run preview`** - Preview the production build locally
-- **`npm run lint`** - Run ESLint to check for code issues
+1. Navigate to **backend/final_single_backend.ino** and download the arduino IDE.
 
-## Project Structure
+2. Open this with the **arduino IDE** and put connect arduino with **wifi module** attached.
 
-```
-eeeseaboat2025/
-├── frontend/          # React application
-│   ├── src/          # Source code
-│   ├── public/       # Public assets
-│   ├── package.json  # Frontend dependencies
-│   └── ...
-└── README.md         # This file
-```
+3. Push the script to the arduino and ensure the **serial monitor** is open when the script is uploaded (cmd + shift + m)
 
-## Technology Stack
+4. Ensure SSID and PASS are the same as the wifi your computer is connected to then enter the ip address in **frontend/src/services/arduinoService.ts** at the top
 
-- **React 19** - Frontend framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
-- **Chakra UI** - Component library
-- **Axios** - HTTP client
-- **Framer Motion** - Animations
-
-## Troubleshooting
-
-If you encounter issues:
-
-1. **Delete node_modules and reinstall:**
-   ```bash
-   cd frontend
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
-
-2. **Check Node.js version:**
-   ```bash
-   node --version
-   ```
-   Make sure you're using Node.js 18 or higher.
-
-3. **Clear npm cache:**
-   ```bash
-   npm cache clean --force
-   ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test your changes
-5. Submit a pull request
-
-## License
-
-This project is part of the EEESEABOAT 2025 competition. 
+5. **npm run dev** instruction as stated above.
