@@ -33,7 +33,7 @@ A React-based interface for Arduino EEESEABOAT control system.
 
    The application will be available at `http://localhost:5173` (or another port if 5173 is in use).
 
-#Backend: 
+# Backend: 
 
 ## How to run:
 
