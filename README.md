@@ -1,4 +1,4 @@
-# EEESEABOAT 2025
+# EEESEABOAT 2025 GROUP 21
 
 # Frontend:
 A React-based interface for Arduino EEESEABOAT control system.
