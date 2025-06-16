@@ -3,10 +3,10 @@
 
 //setup servo motors
 
-#define LEFT_DIR  4  // Digital
+#define LEFT_DIR  9  // Digital
 #define RIGHT_DIR 5  // Digital
-#define LEFT_EN   6  // PWM
-#define RIGHT_EN  7 
+#define LEFT_EN   8  // PWM
+#define RIGHT_EN  6 
 
 
 #include <WiFiWebServer.h>
@@ -15,9 +15,9 @@
 #include <functional>
 
 // network globals
-static const char* SSID = "EEERover";
-static const char* PASS = "exhibition";
-static const int GROUP_NUMBER = 21;    // 0 means “no static IP”
+static const char* SSID = "Roverhotspot";
+static const char* PASS = "123456789";
+static const int GROUP_NUMBER = 0;    // 0 means “no static IP”
 
 
 // takes frequencies of ir and radio and returns species
@@ -479,7 +479,14 @@ public:
     //create HTTP endpoints
     //each line is basically what to do when x happens e.g:
     //on /motors post request call handleMotors function from this instance of this class
-    _server.on("/motors", HTTP_POST,std::bind(&EEERoverServer::handleMotors, this));
+    //_server.on("/motors", HTTP_POST,std::bind(&EEERoverServer::handleMotors, this));
+    _server.on("/up", HTTP_GET,std::bind(&EEERoverServer::handleMotors, this, "up"));
+    _server.on("/down", HTTP_GET,std::bind(&EEERoverServer::handleMotors, this, "down"));
+    _server.on("/left", HTTP_GET,std::bind(&EEERoverServer::handleMotors, this, "left"));
+    _server.on("/right", HTTP_GET,std::bind(&EEERoverServer::handleMotors, this, "right"));
+    _server.on("/stop", HTTP_GET,std::bind(&EEERoverServer::handleMotors, this, "stop"));
+
+    
     _server.on("/ultrasonic", HTTP_GET,std::bind(&EEERoverServer::handleUltrasonic, this));
     _server.on("/magnetic", HTTP_GET,std::bind(&EEERoverServer::handleMagnetic, this));
     _server.on("/IR", HTTP_GET,std::bind(&EEERoverServer::handleIR, this));
@@ -579,72 +586,54 @@ private:
   }
 
   // POST handler for motor controls
-  void handleMotors() {
-  Serial.println("Received POST /motors");
-  sendCORS();
+  void handleMotors(const char* type) {
+    Serial.println("Received GET for motor");
+    sendCORS();
+    Serial.println(F(">> About to send 200 OK"));
+    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    //LEFT MOTOR 
+    
+    if (strcmp(type, "up") == 0 || strcmp(type, "right") == 0) {
+      digitalWrite(LEFT_DIR, HIGH);
+      yield();
+      delay(100);
 
-  StaticJsonDocument<200> doc;
-  String json = _server.arg("plain");
-  DeserializationError err = deserializeJson(doc, json);
-  if (err) {
-    _server.send(400, "application/json", "{\"error\":\"invalid JSON\"}");
-    return;
-  }
+      analogWrite(LEFT_EN, 255);
+      digitalWrite(RIGHT_DIR, HIGH);
+      yield();
+      delay(100);
 
-  JsonArray cmds = doc["commands"].as<JsonArray>();
-  if (!cmds || cmds.size() != 2) {
-    _server.send(400, "application/json", "{\"error\":\"expected 2 motor commands\"}");
-    return;
-  }
+      analogWrite(RIGHT_EN, 255);
+    } else if (strcmp(type, "left") ==0) {
+      digitalWrite(LEFT_DIR, HIGH);
+      yield();
+      delay(100);
 
-  leftCmd  = doc["commands"][0].as<const char*>();
-  rightCmd = doc["commands"][1].as<const char*>();
+      analogWrite(LEFT_EN, 155);
+      digitalWrite(RIGHT_DIR, HIGH);
+      yield();
+      delay(100);
 
-  //print for testing
-  Serial.print("left motor command: "); 
-  Serial.println(leftCmd);
-  Serial.print("right motor command: "); 
-  Serial.println(rightCmd);
+      analogWrite(RIGHT_EN, 155);
+    } else if (strcmp(type, "down") == 0) {
+      digitalWrite(LEFT_DIR, LOW);
+      yield();
+      delay(100);
+      analogWrite(LEFT_EN, 255);
+      yield();
+      delay(20);
+      digitalWrite(RIGHT_DIR, LOW);
+      yield();
+      delay(100);
+      analogWrite(RIGHT_EN, 255);
 
-  //LEFT MOTOR 
-  /*
-  if (leftCmd == "FF") {
-    digitalWrite(LEFT_DIR, HIGH);
-    analogWrite(LEFT_EN, 255);
-    leftCmd = "";
-  } else if (leftCmd == "SF") {
-    digitalWrite(LEFT_DIR, HIGH);
-    analogWrite(LEFT_EN, 155);
-    leftCmd = "";
-  } else if (leftCmd == "B") {
-    digitalWrite(LEFT_DIR, LOW);
-    analogWrite(LEFT_EN, 255);
-    leftCmd = "";
-  } else if (leftCmd == "S") {
-    analogWrite(LEFT_EN, 0);
-    leftCmd = "";
-  }
-  
-  //RIGHT MOTOR
-  if (rightCmd == "FF") {
-    digitalWrite(RIGHT_DIR, HIGH);
-   // analogWrite(RIGHT_EN, 255);
-    rightCmd = "";
-  } else if (rightCmd == "SF") {
-    digitalWrite(RIGHT_DIR, HIGH);
-    //analogWrite(RIGHT_EN, 155);
-    rightCmd = "";
-  } else if (rightCmd == "B") {
-    digitalWrite(RIGHT_DIR, LOW);
-    //analogWrite(RIGHT_EN, 255);
-    rightCmd = "";
-  } else if (rightCmd == "S") {
-    //analogWrite(RIGHT_EN, 0);
-    rightCmd = "";
-  }
-*/
-  Serial.println(F(">> About to send 200 OK"));
-  _server.send(200, "application/json", "{\"status\":\"ok\"}");
+    } else if (strcmp(type, "stop") == 0) {
+      analogWrite(LEFT_EN, 0);
+      analogWrite(RIGHT_EN, 0);
+    }
+    yield();
+    
+    //delay(100);
 }
 
   // get handler for ultrasonic
@@ -660,6 +649,7 @@ private:
     String out;
     serializeJson(resp, out);
     _server.send(200, "application/json", out);
+  
   }
 
   // get handler for magnetic 

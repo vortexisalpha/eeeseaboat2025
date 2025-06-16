@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// Update this to match your Arduino's IP address
-// You'll get this from the Serial Monitor when the Arduino starts
-const ARDUINO_BASE_URL = 'http://192.168.0.22';
+//update this to match Arduino's IP address given by serial monitor
+const ARDUINO_BASE_URL = 'http://172.20.10.3';
 const TIMEOUT_MS = 5000; // 5 second timeout for requests
 
 export interface ArduinoResponse {
@@ -11,12 +10,11 @@ export interface ArduinoResponse {
 }
 
 class ArduinoService {
-  private async sendMotorCommand(commands: string[]): Promise<ArduinoResponse> {
+  private async sendMotorCommand(command: string): Promise<ArduinoResponse> {
     try {
-      const response = await axios.post(
-        `${ARDUINO_BASE_URL}/motors`,
-        { commands }, // send as JSON body
-        { timeout: TIMEOUT_MS, headers: { 'Content-Type': 'application/json' } }
+      const response = await axios.get(
+        `${ARDUINO_BASE_URL}/${command}`,
+        { timeout: TIMEOUT_MS }
       );
       return response.data;
     } catch (error) {
@@ -57,23 +55,23 @@ class ArduinoService {
 
   // Movement commands
   async moveUp(): Promise<ArduinoResponse> {
-    return this.sendMotorCommand(['FF', 'FF', 'FF', 'FF']);
+    return this.sendMotorCommand('up');
   }
 
   async moveDown(): Promise<ArduinoResponse> {
-    return this.sendMotorCommand(['B', 'B', 'B', 'B']);
+    return this.sendMotorCommand('down');
   }
 
   async moveLeft(): Promise<ArduinoResponse> {
-    return this.sendMotorCommand(['SF', 'FF', 'SF', 'FF']);
+    return this.sendMotorCommand('left');
   }
 
   async moveRight(): Promise<ArduinoResponse> {
-    return this.sendMotorCommand(['FF', 'SF', 'FF', 'SF']);
+    return this.sendMotorCommand('right');
   }
 
   async stop(): Promise<ArduinoResponse> {
-    return this.sendMotorCommand(['S', 'S', 'S', 'S']);
+    return this.sendMotorCommand('stop');
   }
 
   // Toggle controls

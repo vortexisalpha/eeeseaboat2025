@@ -154,7 +154,6 @@ const ControlPanel = () => {
           <Button
             {...buttonStyle}
             isLoading={isLoading === 'down'}
-            onClick={() => handleCommand(() => arduinoService.moveDown(), 'down')}
           >
             Down
           </Button>
