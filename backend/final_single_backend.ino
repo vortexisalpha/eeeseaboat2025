@@ -1,9 +1,16 @@
-#define USE_WIFI_NINA   false
-#define USE_WIFI101     true
+#define USE_WIFI_NINA false
+#define USE_WIFI101 true
+
+//setup servo motors
+
+#define LEFT_DIR  4  // Digital
+#define RIGHT_DIR 5  // Digital
+#define LEFT_EN   6  // PWM
+#define RIGHT_EN  7 
+
 
 #include <WiFiWebServer.h>
 #include <ArduinoJson.h> //6.21.5
-#include <Servo.h>
 #include <Arduino.h>
 #include <functional>
 
@@ -406,6 +413,10 @@ public:
   bool irToggle;
   bool radiowaveToggle;
 
+
+  String leftCmd;
+  String rightCmd;
+
   EEERoverServer(const char* ssid, const char* pass, int groupNum):
     _ssid(ssid),
     _pass(pass),
@@ -417,23 +428,14 @@ public:
     radiowaveToggle(false),
     _lastWifiCheck(0)  
   {
-    for (int i = 0; i < 4; i++) {
-      motorValues[i] = 1500;
-    }
+   
   }
 
   void begin() {
-
-    //setup servo motors
-    const int topLeftWheelPin = 13;
-    const int topRightWheelPin = 12;
-    const int bottomLeftWheelPin = 11;
-    const int bottomRightWheelPin = 10;
-
-    topLeftWheelServo.attach(topLeftWheelPin);
-    topRightWheelServo.attach(topRightWheelPin);
-    bottomLeftWheelServo.attach(bottomLeftWheelPin);
-    bottomRightWheelServo.attach(bottomRightWheelPin);
+    pinMode(LEFT_DIR, OUTPUT);
+    pinMode(LEFT_EN, OUTPUT);
+    pinMode(RIGHT_DIR, OUTPUT);
+    pinMode(RIGHT_EN, OUTPUT);
 
     //make connection with usb to serial monitor for debugging
     Serial.begin(9600);
@@ -529,13 +531,8 @@ public:
         magnetismDetector.lastDetected = "";
       }
     }
-
-    // 3) Drive servos according to motorValues array
-    topLeftWheelServo.writeMicroseconds(motorValues[0]);
-    topRightWheelServo.writeMicroseconds(motorValues[1]);
-    bottomLeftWheelServo.writeMicroseconds(motorValues[2]);
-    bottomRightWheelServo.writeMicroseconds(motorValues[3]);
-
+  
+  
     statsObserver.updateStats();
   }
 
@@ -547,12 +544,6 @@ private:
   const char* _pass;
   int _groupNumber;
   WiFiWebServer _server;
-  int motorValues[4];
-
-  Servo topLeftWheelServo;
-  Servo topRightWheelServo;
-  Servo bottomLeftWheelServo;
-  Servo bottomRightWheelServo;
 
   UltrasonicDetector ultrasonicDetector;
   RadioDetector radioDetector;
@@ -589,48 +580,72 @@ private:
 
   // POST handler for motor controls
   void handleMotors() {
-    Serial.println("Received POST /motors");
-    const int FastForwardRPM = 1700;
-    const int SlowForwardRPM = 1550;
-    const int BackwardRPM = 1200;
-    const int StopRPM = 1500;
+  Serial.println("Received POST /motors");
+  sendCORS();
 
-    sendCORS();
-
-    StaticJsonDocument<200> doc;
-    String json = _server.arg("plain");
-    DeserializationError err = deserializeJson(doc, json);
-    if (err) {
-      _server.send(400, "application/json", "{\"error\":\"invalid JSON\"}");
-      return;
-    }
-
-    JsonArray cmds = doc["commands"].as<JsonArray>();
-    if (!cmds) {
-      _server.send(400, "application/json", "{\"error\":\"missing commands array\"}");
-      return;
-    }
-
-    int motorIndex = 0;
-    for (JsonVariant v : cmds) {
-      const char* cmd = v.as<const char*>();
-      if (strcmp(cmd,"FF") == 0) motorValues[motorIndex] = FastForwardRPM;
-      else if (strcmp(cmd,"SF") == 0) motorValues[motorIndex] = SlowForwardRPM;
-      else if (strcmp(cmd,"B") == 0) motorValues[motorIndex] = BackwardRPM;
-      else if (strcmp(cmd,"S") == 0) motorValues[motorIndex] = StopRPM;
-      else {
-        Serial.println(F("Error: unexpected motor command"));
-      }
-      Serial.print(cmd);
-      Serial.print(F(" -> "));
-      Serial.println(motorValues[motorIndex]);
-      Serial.println();
-      motorIndex++;
-      if (motorIndex >= 4) break;
-    }
-
-    _server.send(200, "application/json", "{\"status\":\"ok\"}");
+  StaticJsonDocument<200> doc;
+  String json = _server.arg("plain");
+  DeserializationError err = deserializeJson(doc, json);
+  if (err) {
+    _server.send(400, "application/json", "{\"error\":\"invalid JSON\"}");
+    return;
   }
+
+  JsonArray cmds = doc["commands"].as<JsonArray>();
+  if (!cmds || cmds.size() != 2) {
+    _server.send(400, "application/json", "{\"error\":\"expected 2 motor commands\"}");
+    return;
+  }
+
+  leftCmd  = doc["commands"][0].as<const char*>();
+  rightCmd = doc["commands"][1].as<const char*>();
+
+  //print for testing
+  Serial.print("left motor command: "); 
+  Serial.println(leftCmd);
+  Serial.print("right motor command: "); 
+  Serial.println(rightCmd);
+
+  //LEFT MOTOR 
+  /*
+  if (leftCmd == "FF") {
+    digitalWrite(LEFT_DIR, HIGH);
+    analogWrite(LEFT_EN, 255);
+    leftCmd = "";
+  } else if (leftCmd == "SF") {
+    digitalWrite(LEFT_DIR, HIGH);
+    analogWrite(LEFT_EN, 155);
+    leftCmd = "";
+  } else if (leftCmd == "B") {
+    digitalWrite(LEFT_DIR, LOW);
+    analogWrite(LEFT_EN, 255);
+    leftCmd = "";
+  } else if (leftCmd == "S") {
+    analogWrite(LEFT_EN, 0);
+    leftCmd = "";
+  }
+  
+  //RIGHT MOTOR
+  if (rightCmd == "FF") {
+    digitalWrite(RIGHT_DIR, HIGH);
+   // analogWrite(RIGHT_EN, 255);
+    rightCmd = "";
+  } else if (rightCmd == "SF") {
+    digitalWrite(RIGHT_DIR, HIGH);
+    //analogWrite(RIGHT_EN, 155);
+    rightCmd = "";
+  } else if (rightCmd == "B") {
+    digitalWrite(RIGHT_DIR, LOW);
+    //analogWrite(RIGHT_EN, 255);
+    rightCmd = "";
+  } else if (rightCmd == "S") {
+    //analogWrite(RIGHT_EN, 0);
+    rightCmd = "";
+  }
+*/
+  Serial.println(F(">> About to send 200 OK"));
+  _server.send(200, "application/json", "{\"status\":\"ok\"}");
+}
 
   // get handler for ultrasonic
   void handleUltrasonic() {

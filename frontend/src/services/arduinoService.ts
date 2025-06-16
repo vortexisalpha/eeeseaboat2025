@@ -7,7 +7,7 @@ const TIMEOUT_MS = 5000; // 5 second timeout for requests
 
 export interface ArduinoResponse {
   status: string;
-  message: string;
+  message?: string;
 }
 
 class ArduinoService {
